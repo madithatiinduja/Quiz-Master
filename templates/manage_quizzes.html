@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Quizzes{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Manage Quizzes</h1>
+    <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addQuizModal">
+        Add New Quiz
+    </button>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Chapter</th>
+                <th>Subject</th>
+                <th>Date</th>
+                <th>Duration</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for quiz in quizzes %}
+            <tr>
+                <td>{{ quiz.title }}</td>
+                <td>{{ quiz.chapter.name }}</td>
+                <td>{{ quiz.chapter.subject.name }}</td>
+                <td>{{ quiz.date_of_quiz.strftime('%Y-%m-%d') }}</td>
+                <td>{{ quiz.time_duration }} minutes</td>
+                <td>
+                    <a href="{{ url_for('manage_questions', quiz_id=quiz.id) }}" class="btn btn-sm btn-info">Manage Questions</a>
+                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editQuizModal{{ quiz.id }}">Edit</button>
+                    <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteQuizModal{{ quiz.id }}">Delete</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Quiz Modal -->
+<div class="modal fade" id="addQuizModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Quiz</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('add_quiz') }}" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="chapter_id" class="form-label">Chapter</label>
+                        <select class="form-select" id="chapter_id" name="chapter_id" required>
+                            <option value="">Select a chapter</option>
+                            {% for chapter in chapters %}
+                            <option value="{{ chapter.id }}">{{ chapter.name }} ({{ chapter.subject.name }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Quiz Title</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="date_of_quiz" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="date_of_quiz" name="date_of_quiz" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="time_duration" class="form-label">Duration (minutes)</label>
+                        <input type="number" class="form-control" id="time_duration" name="time_duration" required min="1">
+                    </div>
+                    <div class="mb-3">
+                        <label for="remarks" class="form-label">Remarks</label>
+                        <textarea class="form-control" id="remarks" name="remarks" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Add Quiz</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Quiz Modals -->
+{% for quiz in quizzes %}
+<div class="modal fade" id="editQuizModal{{ quiz.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Quiz</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('edit_quiz', id=quiz.id) }}" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="title{{ quiz.id }}" class="form-label">Quiz Title</label>
+                        <input type="text" class="form-control" id="title{{ quiz.id }}" name="title" value="{{ quiz.title }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="date_of_quiz{{ quiz.id }}" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="date_of_quiz{{ quiz.id }}" name="date_of_quiz" value="{{ quiz.date_of_quiz.strftime('%Y-%m-%d') }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="time_duration{{ quiz.id }}" class="form-label">Duration (minutes)</label>
+                        <input type="number" class="form-control" id="time_duration{{ quiz.id }}" name="time_duration" value="{{ quiz.time_duration }}" required min="1">
+                    </div>
+                    <div class="mb-3">
+                        <label for="remarks{{ quiz.id }}" class="form-label">Remarks</label>
+                        <textarea class="form-control" id="remarks{{ quiz.id }}" name="remarks" rows="3">{{ quiz.remarks }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Quiz Modal -->
+<div class="modal fade" id="deleteQuizModal{{ quiz.id }}" tabindex="-1" aria-labelledby="deleteQuizModalLabel{{ quiz.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteQuizModalLabel{{ quiz.id }}">Delete Quiz</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('delete_quiz', id=quiz.id) }}" method="POST">
+                <div class="modal-body">
+                    Are you sure you want to delete the quiz "{{ quiz.title }}"?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}
+

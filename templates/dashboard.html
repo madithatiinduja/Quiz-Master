@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="#">Quiz App</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h1>Welcome, {{ current_user.full_name }}</h1>
+        
+        {% if current_user.role == 'admin' %}
+        <h2>Admin Dashboard</h2>
+        <div class="row mt-4">
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h3>Manage Users</h3>
+                        <p>Total Users: {{ total_users }}</p>
+                        <a href="{{ url_for('manage_users') }}" class="btn btn-primary">Manage Users</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h3>Manage Subjects</h3>
+                        <p>Total Subjects: {{ subjects|length }}</p>
+                        <a href="{{ url_for('manage_subjects') }}" class="btn btn-primary">Manage Subjects</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h3>Manage Chapters</h3>
+                        <p>Total Chapters: {{ chapters|length }}</p>
+                        <a href="{{ url_for('manage_chapters') }}" class="btn btn-primary">Manage Chapters</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h3>Manage Quizzes</h3>
+                        <p>Total Quizzes: {{ total_quizzes }}</p>
+                        <a href="{{ url_for('manage_quizzes') }}" class="btn btn-primary">Manage Quizzes</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h3>View Reports</h3>
+                        <p>View quiz statistics and results</p>
+                        <a href="{{ url_for('view_reports') }}" class="btn btn-primary">View Reports</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <h2>User Dashboard</h2>
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <h3>Select Subject and Chapter</h3>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="subject" class="form-label">Select Subject</label>
+                            <select class="form-select" id="subject">
+                                <option value="">Choose a subject...</option>
+                                {% for subject in subjects %}
+                                <option value="{{ subject.id }}">{{ subject.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="chapter" class="form-label">Select Chapter</label>
+                            <select class="form-select" id="chapter">
+                                <option value="">Choose a chapter...</option>
+                                {% for chapter in chapters %}
+                                <option value="{{ chapter.id }}" data-subject="{{ chapter.subject_id }}">{{ chapter.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h3>Available Quizzes</h3>
+                <ul class="list-group">
+                    {% for quiz in available_quizzes %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center" data-chapter="{{ quiz.chapter_id }}">
+                        {{ quiz.title }}
+                        <a href="{{ url_for('quiz_view', quiz_id=quiz.id) }}" class="btn btn-primary btn-sm">Start Quiz</a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <h3>Past Quiz Scores</h3>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Quiz</th>
+                            <th>Score</th>
+                            <th>Date Taken</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for score in past_scores %}
+                        <tr>
+                            <td>{{ score.quiz.title }}</td>
+                            <td>{{ score.total_score }}%</td>
+                            <td>{{ score.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <a href="{{ url_for('quiz_result', quiz_id=score.quiz_id, score_id=score.id) }}" class="btn btn-info btn-sm">View Results</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    {% if not current_user.role == 'admin' %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const subjectSelect = document.getElementById('subject');
+            const chapterSelect = document.getElementById('chapter');
+            const quizItems = document.querySelectorAll('.list-group-item');
+
+            function updateChapters(selectedSubjectId) {
+                const chapters = chapterSelect.getElementsByTagName('option');
+                for (let chapter of chapters) {
+                    if (chapter.value === '') continue; // Skip the placeholder option
+                    if (!selectedSubjectId || chapter.getAttribute('data-subject') === selectedSubjectId) {
+                        chapter.style.display = '';
+                    } else {
+                        chapter.style.display = 'none';
+                    }
+                }
+            }
+
+            function updateQuizzes(selectedChapterId) {
+                quizItems.forEach(quiz => {
+                    if (!selectedChapterId || quiz.getAttribute('data-chapter') === selectedChapterId) {
+                        quiz.style.display = 'flex';
+                    } else {
+                        quiz.style.display = 'none';
+                    }
+                });
+            }
+
+            // Initial state
+            updateChapters('');
+            updateQuizzes('');
+
+            // When subject changes
+            subjectSelect.addEventListener('change', function() {
+                const selectedSubjectId = this.value;
+                chapterSelect.value = ''; // Reset chapter selection
+                updateChapters(selectedSubjectId);
+                updateQuizzes(''); // Hide all quizzes until chapter is selected
+            });
+
+            // When chapter changes
+            chapterSelect.addEventListener('change', function() {
+                const selectedChapterId = this.value;
+                updateQuizzes(selectedChapterId);
+            });
+        });
+    </script>
+    {% endif %}
+</body>
+</html>
+
